@@ -8,6 +8,6 @@
         public const string Pages_Users_Activation = "Pages.Users.Activation";
 
         public const string Pages_Roles = "Pages.Roles";
-        public const string Pages_Autores = "Pages_Autores";
+        public const string Pages_Autores = "Pages.Autores";
     }
 }
