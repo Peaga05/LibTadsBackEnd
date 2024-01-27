@@ -4,6 +4,7 @@
     <text name="HomePage" value="Página Inicial" />
     <text name="About" value="Sobre" />
     <text name="Autores" value="Autores" />
+    <text name="Generos" value="Generos" />
     <text name="WelcomeMessage" value="Bem Vindo ao LibTads!" />
     <text name="FormIsNotValidMessage" value="Formulário não é válido. Por favor, verifique e corrija os erros." />
     <text name="TenantNameCanNotBeEmpty" value="Tenant não pode estar vazio" />
