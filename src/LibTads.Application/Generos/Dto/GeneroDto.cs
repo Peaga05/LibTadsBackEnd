@@ -8,14 +8,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LibTads.Autores.Dto
+namespace LibTads.Generos.Dto
 {
-    [AutoMapFrom(typeof(Autor))]
-    public class AutorDto : EntityDto<int>
+    [AutoMapFrom(typeof(Genero))]
+    public class GeneroDto : EntityDto<int>
     {
-        [Required(ErrorMessage = "O nome do autor é obrigatório.")]
-        public string Nome { get; set; }
+        [Required(ErrorMessage = "A descrição do gênero é obrigatório.")]
+        public string Descricao { get; set; }
         public DateTime CreationTime { get; set; }
         public bool IsDeleted { get; set; }
     }
 }
+

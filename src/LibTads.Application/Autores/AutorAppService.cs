@@ -65,7 +65,7 @@ namespace LibTads.Autores
 
         public async Task<AutorDto> GetAutorById(int id)
         {
-            var autor = await Repository.FirstOrDefaultAsync(x => x.Id == id);
+            var autor = await Repository.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             return ObjectMapper.Map<AutorDto>(autor);
         }
 

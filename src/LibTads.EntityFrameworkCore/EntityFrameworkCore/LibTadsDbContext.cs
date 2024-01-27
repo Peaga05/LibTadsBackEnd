@@ -11,6 +11,7 @@ namespace LibTads.EntityFrameworkCore
     {
         
         public DbSet<Autor> Autores { get; set; }
+        public DbSet<Genero> Generos { get; set; }
         public LibTadsDbContext(DbContextOptions<LibTadsDbContext> options)
             : base(options)
         {
