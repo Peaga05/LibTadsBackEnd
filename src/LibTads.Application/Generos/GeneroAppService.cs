@@ -2,6 +2,7 @@
 using Abp.Application.Services.Dto;
 using Abp.Authorization;
 using Abp.Domain.Repositories;
+using Abp.UI;
 using LibTads.Authorization;
 using LibTads.Autores.Dto;
 using LibTads.Domain;
@@ -25,6 +26,17 @@ namespace LibTads.Generos
         public override async Task<GeneroDto> CreateAsync(CreateGeneroDto generoDto)
         {
             CheckCreatePermission();
+            var havegenero = await Repository.FirstOrDefaultAsync(x => x.Descricao.Equals(generoDto.Descricao));
+            if (havegenero != null)
+            {
+                if (havegenero.IsDeleted)
+                {
+                    havegenero.IsDeleted = false;
+                    await Repository.UpdateAsync(havegenero);
+                    return MapToEntityDto(havegenero);
+                }
+                throw new UserFriendlyException("Esse gênero já está cadastrado");
+            }
             var genero = ObjectMapper.Map<Genero>(generoDto);
             genero.CreationTime = DateTime.Now;
             await Repository.InsertAsync(genero);
@@ -47,7 +59,7 @@ namespace LibTads.Generos
             await Repository.UpdateAsync(genero);
         }
 
-        public async Task<PagedResultDto<GeneroDto>> GetGenero(PagedRoleResultRequestDto input, int pageNumber, int pageSize)
+        public async Task<PagedResultDto<GeneroDto>> GetGenero(PagedAutorResultRequestDto input, int pageNumber, int pageSize)
         {
             if (input.Keyword == null) input.Keyword = "";
             var query = Repository.GetAllListAsync(e => e.IsDeleted == false && e.Descricao.Contains(input.Keyword));
@@ -61,10 +73,18 @@ namespace LibTads.Generos
             return new PagedResultDto<GeneroDto>(totalCount, itemDtos);
         }
 
-        public async Task<GeneroDto> GetAutorById(int id)
+        public async Task<GeneroDto> GetGeneroById(int id)
         {
             var genero = await Repository.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             return ObjectMapper.Map<GeneroDto>(genero);
         }
+
+        public async Task<List<GeneroDto>> GetAllGenero()
+        {
+            var query = Repository.GetAllListAsync(e => e.IsDeleted == false);
+            var itemDtos = ObjectMapper.Map<List<GeneroDto>>(query.Result);
+            return itemDtos;
+        }
+
     }
 }

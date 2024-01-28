@@ -1,4 +1,5 @@
 ﻿using Abp.Application.Services.Dto;
+using LibTads.Domain;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -12,5 +13,7 @@ namespace LibTads.Generos.Dto
     {
         [Required(ErrorMessage = "A descrição do gênero é obrigatório.")]
         public string Descricao { get; set; }
+        public virtual ICollection<Livro> Livros { get; set; }
+
     }
 }

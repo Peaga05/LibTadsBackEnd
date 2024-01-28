@@ -18,7 +18,7 @@ namespace LibTads.Autores.Dto
         {
             CreateMap<CreateAutorDto, Autor>();
             CreateMap<AutorDto, Autor>();
-            CreateMap<Autor, ReadAutorDto>();
+            CreateMap<Autor, ReadAutorDto>().ForMember(autorDto => autorDto.Livros, opt => opt.MapFrom(autor => autor.Livros)); ;
             CreateMap<UpdateAutorDto, Autor>();
         }
     }

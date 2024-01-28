@@ -4,9 +4,11 @@ using Abp.Authorization;
 using Abp.Domain.Repositories;
 using Abp.Extensions;
 using Abp.Linq.Extensions;
+using Abp.UI;
 using LibTads.Authorization;
 using LibTads.Autores.Dto;
 using LibTads.Domain;
+using LibTads.Generos.Dto;
 using LibTads.Roles.Dto;
 using LibTads.Users;
 using System;
@@ -27,6 +29,17 @@ namespace LibTads.Autores
         public override async Task<AutorDto> CreateAsync(CreateAutorDto autorDto)
         {
             CheckCreatePermission();
+            var haveAutor = await Repository.FirstOrDefaultAsync(x => x.Nome.Equals(autorDto.Nome));
+            if (haveAutor != null)
+            {
+                if (haveAutor.IsDeleted)
+                {
+                    haveAutor.IsDeleted = false;
+                    await Repository.UpdateAsync(haveAutor);
+                    return MapToEntityDto(haveAutor);
+                }
+                throw new UserFriendlyException("Esse autor já está cadastrado");
+            }
             var autor = ObjectMapper.Map<Autor>(autorDto);
             autor.CreationTime = DateTime.Now;
             await Repository.InsertAsync(autor);
@@ -49,7 +62,7 @@ namespace LibTads.Autores
             await Repository.UpdateAsync(autor);
         }
 
-        public async Task<PagedResultDto<AutorDto>> GetAutores(PagedRoleResultRequestDto input, int pageNumber, int pageSize)
+        public async Task<PagedResultDto<AutorDto>> GetAutores(PagedAutorResultRequestDto input, int pageNumber, int pageSize)
         {
             if (input.Keyword == null) input.Keyword = "";
             var query = Repository.GetAllListAsync(e => e.IsDeleted == false && e.Nome.Contains(input.Keyword));
@@ -58,7 +71,7 @@ namespace LibTads.Autores
             var items = query.Result.Skip((pageNumber - 1) * pageSize)
                                    .Take(pageSize).ToList();
 
-            var itemDtos = ObjectMapper.Map<List<AutorDto>>(items); 
+            var itemDtos = ObjectMapper.Map<List<AutorDto>>(items);
 
             return new PagedResultDto<AutorDto>(totalCount, itemDtos);
         }
@@ -73,6 +86,14 @@ namespace LibTads.Autores
         {
             return Repository.GetAllIncluding()
                 .WhereIf(!input.Keyword.IsNullOrWhiteSpace(), x => x.Nome.Contains(input.Keyword));
+        }
+
+        public async Task<List<AutorDto>> GetAllAutor()
+        {
+            var query = Repository.GetAllListAsync(e => e.IsDeleted == false);
+            var itemDtos = ObjectMapper.Map<List<AutorDto>>(query.Result);
+            return itemDtos;
+
         }
     }
 }

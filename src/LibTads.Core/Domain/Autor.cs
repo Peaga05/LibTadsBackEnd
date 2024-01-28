@@ -16,5 +16,7 @@ namespace LibTads.Domain
         public string Nome {  get; set; }
         public DateTime CreationTime { get; set; }
         public bool IsDeleted { get; set; }
+        public virtual ICollection<Livro> Livros { get; set; }
+
     }
 }

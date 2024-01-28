@@ -10,5 +10,6 @@
         public const string Pages_Roles = "Pages.Roles";
         public const string Pages_Autores = "Pages.Autores";
         public const string Pages_Generos = "Pages.Generos";
+        public const string Pages_Livros = "Pages.Livros";
     }
 }

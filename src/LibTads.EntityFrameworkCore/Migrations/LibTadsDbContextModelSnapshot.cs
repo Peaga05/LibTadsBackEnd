@@ -1575,6 +1575,49 @@ namespace LibTads.Migrations
                     b.ToTable("Generos");
                 });
 
+            modelBuilder.Entity("LibTads.Domain.Livro", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("AutorId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GeneroId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Isbn")
+                        .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
+                    b.Property<string>("QrCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("GeneroId");
+
+                    b.ToTable("Livros");
+                });
+
             modelBuilder.Entity("LibTads.MultiTenancy.Tenant", b =>
                 {
                     b.Property<int>("Id")
@@ -1856,6 +1899,25 @@ namespace LibTads.Migrations
                     b.Navigation("LastModifierUser");
                 });
 
+            modelBuilder.Entity("LibTads.Domain.Livro", b =>
+                {
+                    b.HasOne("LibTads.Domain.Autor", "Autor")
+                        .WithMany("Livros")
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LibTads.Domain.Genero", "Genero")
+                        .WithMany("Livros")
+                        .HasForeignKey("GeneroId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Autor");
+
+                    b.Navigation("Genero");
+                });
+
             modelBuilder.Entity("LibTads.MultiTenancy.Tenant", b =>
                 {
                     b.HasOne("LibTads.Authorization.Users.User", "CreatorUser")
@@ -1952,6 +2014,16 @@ namespace LibTads.Migrations
                     b.Navigation("Settings");
 
                     b.Navigation("Tokens");
+                });
+
+            modelBuilder.Entity("LibTads.Domain.Autor", b =>
+                {
+                    b.Navigation("Livros");
+                });
+
+            modelBuilder.Entity("LibTads.Domain.Genero", b =>
+                {
+                    b.Navigation("Livros");
                 });
 #pragma warning restore 612, 618
         }
