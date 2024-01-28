@@ -15,7 +15,7 @@ namespace LibTads.Generos.Dto
         {
             CreateMap<CreateGeneroDto, Genero>();
             CreateMap<GeneroDto, Genero>();
-            CreateMap<Genero, ReadGeneroDto>();
+            CreateMap<Genero, ReadGeneroDto>().ForMember(generoDto => generoDto.Livros, opt => opt.MapFrom(genero => genero.Livros));
             CreateMap<UpdateGeneroDto, Genero>();
         }
     }
