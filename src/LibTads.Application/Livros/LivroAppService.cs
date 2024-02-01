@@ -51,6 +51,11 @@ namespace LibTads.Livros
         public override async Task<LivroDto> UpdateAsync(UpdateLivroDto livroDto)
         {
             CheckCreatePermission();
+            var haveIsbn = Repository.FirstOrDefault(x => x.Isbn.Equals(livroDto.Isbn) && x.Id != livroDto.Id);
+            if(haveIsbn != null)
+            {
+                throw new UserFriendlyException("Esse isbn esta vinculado a outro livro!");
+            }
             var livro = ObjectMapper.Map<Livro>(livroDto);
             await Repository.UpdateAsync(livro);
             return await GetAsync(livroDto);
@@ -77,8 +82,8 @@ namespace LibTads.Livros
 
             foreach (var item in itemDtos)
             {
-                var autor = await _repositoryAutor.FirstOrDefaultAsync(x => x.Id == item.Id);
-                var genero = await _repositoryGenero.FirstOrDefaultAsync(x => x.Id == item.Id);
+                var autor = await _repositoryAutor.FirstOrDefaultAsync(x => x.Id == item.AutorId);
+                var genero = await _repositoryGenero.FirstOrDefaultAsync(x => x.Id == item.GeneroId);
                 item.DescricaoGenero = genero.Descricao;
                 item.NomeAutor = autor.Nome;
             }
