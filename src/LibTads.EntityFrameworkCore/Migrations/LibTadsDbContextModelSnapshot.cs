@@ -1596,8 +1596,8 @@ namespace LibTads.Migrations
 
                     b.Property<string>("Isbn")
                         .IsRequired()
-                        .HasMaxLength(11)
-                        .HasColumnType("nvarchar(11)");
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
 
                     b.Property<string>("QrCode")
                         .HasColumnType("nvarchar(max)");
