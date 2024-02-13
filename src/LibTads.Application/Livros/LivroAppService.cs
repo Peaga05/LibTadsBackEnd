@@ -1,7 +1,9 @@
 ﻿using Abp.Application.Services;
 using Abp.Application.Services.Dto;
+using Abp.Authorization;
 using Abp.Domain.Repositories;
 using Abp.UI;
+using LibTads.Authorization;
 using LibTads.Autores.Dto;
 using LibTads.Domain;
 using LibTads.Livros.Dto;
@@ -14,6 +16,7 @@ using System.Threading.Tasks;
 
 namespace LibTads.Livros
 {
+    [AbpAuthorize(PermissionNames.Pages_Livros)]
     public class LivroAppService : AsyncCrudAppService<Livro, LivroDto, int, PagedLivroResultRequestDto, CreateLivroDto, UpdateLivroDto>
     {
         private readonly IRepository<Autor, int> _repositoryAutor;

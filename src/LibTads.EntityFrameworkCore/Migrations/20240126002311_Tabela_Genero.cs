@@ -7,11 +7,6 @@ namespace LibTads.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "Name",
-                table: "Autores",
-                newName: "Nome");
-
             migrationBuilder.CreateTable(
                 name: "Generos",
                 columns: table => new
@@ -32,11 +27,6 @@ namespace LibTads.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Generos");
-
-            migrationBuilder.RenameColumn(
-                name: "Nome",
-                table: "Autores",
-                newName: "Name");
         }
     }
 }

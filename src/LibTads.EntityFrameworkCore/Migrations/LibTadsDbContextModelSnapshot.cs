@@ -1553,6 +1553,40 @@ namespace LibTads.Migrations
                     b.ToTable("Autores");
                 });
 
+            modelBuilder.Entity("LibTads.Domain.Emprestimo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DataDevolucao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DataEmprestimo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LivroId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LivroId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Emprestimos");
+                });
+
             modelBuilder.Entity("LibTads.Domain.Genero", b =>
                 {
                     b.Property<int>("Id")
@@ -1595,7 +1629,6 @@ namespace LibTads.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Isbn")
-                        .IsRequired()
                         .HasMaxLength(13)
                         .HasColumnType("nvarchar(13)");
 
@@ -1897,6 +1930,25 @@ namespace LibTads.Migrations
                     b.Navigation("DeleterUser");
 
                     b.Navigation("LastModifierUser");
+                });
+
+            modelBuilder.Entity("LibTads.Domain.Emprestimo", b =>
+                {
+                    b.HasOne("LibTads.Domain.Livro", "Livro")
+                        .WithMany()
+                        .HasForeignKey("LivroId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LibTads.Authorization.Users.User", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Livro");
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("LibTads.Domain.Livro", b =>

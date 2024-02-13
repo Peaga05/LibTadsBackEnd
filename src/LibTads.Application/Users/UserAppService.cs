@@ -57,6 +57,8 @@ namespace LibTads.Users
         {
             CheckCreatePermission();
 
+            VerficarCadastro(input.EmailAddress, input.UserName);
+
             var user = ObjectMapper.Map<User>(input);
 
             user.TenantId = AbpSession.TenantId;
@@ -123,7 +125,17 @@ namespace LibTads.Users
             var roles = await _roleRepository.GetAllListAsync();
             return new ListResultDto<RoleDto>(ObjectMapper.Map<List<RoleDto>>(roles));
         }
-
+        [AbpAllowAnonymous]
+        public async Task<List<string>> GetUserRoles()
+        {
+            if (_abpSession.UserId == null)
+            {
+                throw new UserFriendlyException("Erro: Faça o login novamente!");
+            }
+            var currentUser = await _userManager.GetUserByIdAsync(_abpSession.GetUserId());
+            var roles = await _userManager.GetRolesAsync(currentUser);
+            return roles.ToList();
+        }
         public async Task ChangeLanguage(ChangeUserLanguageDto input)
         {
             await SettingManager.ChangeSettingForUserAsync(
@@ -196,7 +208,7 @@ namespace LibTads.Users
             {
                 throw new Exception("There is no current user!");
             }
-            
+
             if (await _userManager.CheckPasswordAsync(user, input.CurrentPassword))
             {
                 CheckErrors(await _userManager.ChangePasswordAsync(user, input.NewPassword));
@@ -218,19 +230,19 @@ namespace LibTads.Users
             {
                 throw new UserFriendlyException("Please log in before attempting to reset password.");
             }
-            
+
             var currentUser = await _userManager.GetUserByIdAsync(_abpSession.GetUserId());
             var loginAsync = await _logInManager.LoginAsync(currentUser.UserName, input.AdminPassword, shouldLockout: false);
             if (loginAsync.Result != AbpLoginResultType.Success)
             {
                 throw new UserFriendlyException("Your 'Admin Password' did not match the one on record.  Please try again.");
             }
-            
+
             if (currentUser.IsDeleted || !currentUser.IsActive)
             {
                 return false;
             }
-            
+
             var roles = await _userManager.GetRolesAsync(currentUser);
             if (!roles.Contains(StaticRoleNames.Tenants.Admin))
             {
@@ -245,6 +257,15 @@ namespace LibTads.Users
             }
 
             return true;
+        }
+
+        private void VerficarCadastro(string email, string userName)
+        {
+            var user = Repository.FirstOrDefault(x => x.UserName.Equals(userName) || x.EmailAddress.Equals(email));
+            if (user != null)
+            {
+                throw new UserFriendlyException("Usuário já cadastrado!");
+            }
         }
     }
 }
