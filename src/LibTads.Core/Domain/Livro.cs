@@ -13,7 +13,7 @@ namespace LibTads.Domain
     {
         [Required(ErrorMessage = "O campo título é obrigatório.")]
         public string Titulo { get; set; }
-        [Required(ErrorMessage = "O campo ISBN é obrigatório."), StringLength(13, ErrorMessage = "O campo ISBN só pode ter 13 caracteres")]
+        [StringLength(13, ErrorMessage = "O campo ISBN só pode ter 13 caracteres")]
         public string Isbn { get; set; }
         [Required(ErrorMessage = "O campo quantidade é obrigatório.")]
         public int Quantidade { get; set; }

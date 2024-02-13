@@ -14,6 +14,7 @@ namespace LibTads.Authorization
             context.CreatePermission(PermissionNames.Pages_Autores, L("Autores"));
             context.CreatePermission(PermissionNames.Pages_Generos, L("Generos"));
             context.CreatePermission(PermissionNames.Pages_Livros, L("Livros"));
+            context.CreatePermission(PermissionNames.Pages_Emprestimos, L("Emprestimos"));
             context.CreatePermission(PermissionNames.Pages_Tenants, L("Tenants"), multiTenancySides: MultiTenancySides.Host);
         }
 

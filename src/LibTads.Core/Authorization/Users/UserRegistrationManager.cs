@@ -11,13 +11,14 @@ using Abp.Runtime.Session;
 using Abp.UI;
 using LibTads.Authorization.Roles;
 using LibTads.MultiTenancy;
+using Abp.Domain.Repositories;
 
 namespace LibTads.Authorization.Users
 {
     public class UserRegistrationManager : DomainService
     {
         public IAbpSession AbpSession { get; set; }
-
+        private readonly IRepository<User, long> _userRepository;
         private readonly TenantManager _tenantManager;
         private readonly UserManager _userManager;
         private readonly RoleManager _roleManager;
@@ -25,11 +26,13 @@ namespace LibTads.Authorization.Users
 
         public UserRegistrationManager(
             TenantManager tenantManager,
+            IRepository<User, long> userRepository,
             UserManager userManager,
             RoleManager roleManager,
             IPasswordHasher<User> passwordHasher)
         {
             _tenantManager = tenantManager;
+            _userRepository = userRepository;
             _userManager = userManager;
             _roleManager = roleManager;
             _passwordHasher = passwordHasher;
@@ -39,13 +42,11 @@ namespace LibTads.Authorization.Users
 
         public async Task<User> RegisterAsync(string name, string surname, string emailAddress, string userName, string plainPassword, bool isEmailConfirmed)
         {
-            CheckForTenant();
-
-            var tenant = await GetActiveTenantAsync();
+            VerficarCadastro(emailAddress, userName);
 
             var user = new User
             {
-                TenantId = tenant.Id,
+                TenantId = null,
                 Name = name,
                 Surname = surname,
                 EmailAddress = emailAddress,
@@ -56,13 +57,13 @@ namespace LibTads.Authorization.Users
             };
 
             user.SetNormalizedNames();
-           
-            foreach (var defaultRole in await _roleManager.Roles.Where(r => r.IsDefault).ToListAsync())
+
+            foreach (var defaultRole in await _roleManager.Roles.Where(r => r.DisplayName.Equals("Aluno")).ToListAsync())
             {
-                user.Roles.Add(new UserRole(tenant.Id, user.Id, defaultRole.Id));
+                user.Roles.Add(new UserRole(null, user.Id, defaultRole.Id));
             }
 
-            await _userManager.InitializeOptionsAsync(tenant.Id);
+            await _userManager.InitializeOptionsAsync(null);
 
             CheckErrors(await _userManager.CreateAsync(user, plainPassword));
             await CurrentUnitOfWork.SaveChangesAsync();
@@ -107,6 +108,14 @@ namespace LibTads.Authorization.Users
         protected virtual void CheckErrors(IdentityResult identityResult)
         {
             identityResult.CheckErrors(LocalizationManager);
+        }
+        private void VerficarCadastro(string email, string userName)
+        {
+            var user = _userRepository.FirstOrDefault(x => x.UserName.Equals(userName) || x.EmailAddress.Equals(email));
+            if (user != null)
+            {
+                throw new UserFriendlyException("Usuário já cadastrado!");
+            }
         }
     }
 }
