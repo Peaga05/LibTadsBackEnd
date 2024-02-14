@@ -125,6 +125,7 @@ namespace LibTads.Users
             var roles = await _roleRepository.GetAllListAsync();
             return new ListResultDto<RoleDto>(ObjectMapper.Map<List<RoleDto>>(roles));
         }
+
         [AbpAllowAnonymous]
         public async Task<List<string>> GetUserRoles()
         {
@@ -136,6 +137,19 @@ namespace LibTads.Users
             var roles = await _userManager.GetRolesAsync(currentUser);
             return roles.ToList();
         }
+
+        [AbpAllowAnonymous]
+        public async Task<long> GetUserLogado()
+        {
+            if (_abpSession.UserId == null)
+            {
+                throw new UserFriendlyException("Erro: Faça o login novamente!");
+            }
+            var user = await _userManager.GetUserByIdAsync(_abpSession.GetUserId());
+            return user.Id;
+
+        }
+
         public async Task ChangeLanguage(ChangeUserLanguageDto input)
         {
             await SettingManager.ChangeSettingForUserAsync(

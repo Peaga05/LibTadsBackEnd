@@ -42,12 +42,13 @@ namespace LibTads.Emprestimos
                 throw new UserFriendlyException("Emprestimo em andamento!");
             }
 
-            var livro = _livroRepository.FirstOrDefault(x => x.Equals(emprestimoDto.LivroId));
+            var livro = await _livroRepository.FirstOrDefaultAsync(x => x.Id.Equals(emprestimoDto.LivroId));
             livro.Quantidade -= 1;
             await _livroRepository.UpdateAsync(livro);
 
             var emprestimo = ObjectMapper.Map<Emprestimo>(emprestimoDto);
             emprestimo.DataEmprestimo = DateTime.Now;
+            emprestimo.CreationTime = DateTime.Now;
             await Repository.InsertAsync(emprestimo);
             return MapToEntityDto(emprestimo);
         }
@@ -55,13 +56,45 @@ namespace LibTads.Emprestimos
         public async Task<PagedResultDto<EmprestimoDto>> GetAllEmprestimos(PagedEmprestimoResultRequestDto input, int pageNumber, int pageSize)
         {
             if (input.Keyword == null) input.Keyword = "";
+
             var emprestimos = Repository.GetAll()
                 .Include(x => x.Usuario)
                 .Include(x => x.Livro)
-                .Where(x => x.Livro.Titulo.Contains(input.Keyword) || x.Usuario.Name.Contains(input.Keyword));
+                .Where(x => x.Livro.Titulo.Contains(input.Keyword) || x.Usuario.Name.Contains(input.Keyword))
+                .OrderByDescending(x => x.DataEmprestimo);
 
             var items = emprestimos.Skip((pageNumber - 1) * pageSize)
-                                  .Take(pageSize).ToList();
+                                  .Take(pageSize)
+                                  .ToList();
+
+            var emprestimosDto = ObjectMapper.Map<List<EmprestimoDto>>(items);
+            foreach (var item in emprestimosDto)
+            {
+                var emprestimoMap = items.FirstOrDefault(x => x.Id == item.Id);
+                item.TituloLivro = emprestimoMap.Livro.Titulo;
+                item.NomeUsuario = emprestimoMap.Usuario.Name;
+            }
+
+            var totalCount = emprestimos.Count();
+            return new PagedResultDto<EmprestimoDto>(totalCount, emprestimosDto);
+        }
+
+        public async Task<PagedResultDto<EmprestimoDto>> GetAllEmprestimosByUser(PagedEmprestimoResultRequestDto input, int pageNumber, int pageSize)
+        {
+            if (_abpSession.UserId == null)
+            {
+                throw new UserFriendlyException("Erro: Faça o login novamente!");
+            }
+            if (input.Keyword == null) input.Keyword = "";
+            var emprestimos = Repository.GetAll()
+                .Include(x => x.Usuario)
+                .Include(x => x.Livro)
+                .Where(x => x.UserId.Equals(_abpSession.GetUserId()) && (x.Livro.Titulo.Contains(input.Keyword) || x.Usuario.Name.Contains(input.Keyword)))
+                .OrderByDescending(x => x.DataEmprestimo);
+
+            var items = emprestimos.Skip((pageNumber - 1) * pageSize)
+                                  .Take(pageSize)
+                                  .ToList();
 
             var emprestimosDto = ObjectMapper.Map<List<EmprestimoDto>>(items);
             foreach (var item in emprestimosDto)
@@ -70,7 +103,51 @@ namespace LibTads.Emprestimos
                 item.TituloLivro = emprestimoMap.Livro.Titulo;
                 item.NomeUsuario = emprestimoMap.Usuario.Name;
             }
-            return new PagedResultDto<EmprestimoDto>(emprestimosDto.Count(), emprestimosDto);
+
+            var totalCount = emprestimos.Count();
+            return new PagedResultDto<EmprestimoDto>(totalCount, emprestimosDto);
+        }
+        public void DevolverLivro(int idEmprestimo)
+        {
+            var emprestimo = Repository.FirstOrDefault(x => x.Id.Equals(idEmprestimo));
+            if (emprestimo == null)
+            {
+                throw new UserFriendlyException("Empréstimo não encontrado!");
+            }
+
+            var livro = _livroRepository.FirstOrDefault(x => x.Id.Equals(emprestimo.LivroId));
+            if (livro == null)
+            {
+                throw new UserFriendlyException("Livro não encontrado!");
+            }
+
+            livro.Quantidade += 1;
+            _livroRepository.UpdateAsync(livro);
+
+            emprestimo.DataDevolucao = DateTime.Now;
+            Repository.Update(emprestimo);
+        }
+
+        public void RenovarEmprestimo(int idEmprestimo)
+        {
+            var emprestimo = Repository.FirstOrDefault(x => x.Id.Equals(idEmprestimo));
+            if (emprestimo == null)
+            {
+                throw new UserFriendlyException("Empréstimo não encontrado!");
+            }
+
+            emprestimo.DataDevolucao = DateTime.Now;
+            Repository.Update(emprestimo);
+
+            var newEmprestimo = new Emprestimo()
+            {
+                LivroId = emprestimo.LivroId,
+                UserId = emprestimo.UserId,
+                DataEmprestimo = DateTime.Now,
+                CreationTime = DateTime.Now,
+            };
+
+            Repository.Insert(newEmprestimo);
         }
     }
 }
