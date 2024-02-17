@@ -78,10 +78,9 @@ namespace LibTads.Users
             return MapToEntityDto(user);
         }
 
+        [AbpAllowAnonymous]
         public override async Task<UserDto> UpdateAsync(UserDto input)
         {
-            CheckUpdatePermission();
-
             var user = await _userManager.GetUserByIdAsync(input.Id);
 
             MapToEntity(input, user);
@@ -93,7 +92,7 @@ namespace LibTads.Users
                 CheckErrors(await _userManager.SetRolesAsync(user, input.RoleNames));
             }
 
-            return await GetAsync(input);
+            return input;
         }
 
         public override async Task DeleteAsync(EntityDto<long> input)
@@ -139,14 +138,14 @@ namespace LibTads.Users
         }
 
         [AbpAllowAnonymous]
-        public async Task<long> GetUserLogado()
+        public async Task<UserDto> GetUserLogado()
         {
             if (_abpSession.UserId == null)
             {
                 throw new UserFriendlyException("Erro: Faça o login novamente!");
             }
             var user = await _userManager.GetUserByIdAsync(_abpSession.GetUserId());
-            return user.Id;
+            return ObjectMapper.Map<UserDto>(user);
 
         }
 
