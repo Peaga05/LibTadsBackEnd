@@ -12,6 +12,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.4.3" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\LibTads.Core\LibTads.Core.csproj" />
   </ItemGroup>
 </Project>
