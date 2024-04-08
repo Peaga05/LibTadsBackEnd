@@ -10,9 +10,13 @@ using LibTads.Livros.Dto;
 using LibTads.Roles.Dto;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
+using QRCoder;
 
 namespace LibTads.Livros
 {
@@ -48,7 +52,38 @@ namespace LibTads.Livros
             var livro = ObjectMapper.Map<Livro>(livroDto);
             livro.CreationTime = DateTime.Now;
             await Repository.InsertAsync(livro);
-            return MapToEntityDto(livro);
+            var livroMap =  MapToEntityDto(livro);
+            if (livroDto.GerarQrCode)
+            {
+                livro.QrCode = gerarQrCode(livroMap.Id);
+                livroMap.QrCode = livro.QrCode;
+                await Repository.UpdateAsync(livro);
+            }
+            return livroMap;
+        }
+
+        private string gerarQrCode(int id)
+        {
+            var url = "http://localhost:4200/app/emprestimos/create-emprestimo/" + id;
+            using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
+            {
+                QRCodeData qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.H);
+                QRCode qrCode = new QRCode(qrCodeData);
+                Bitmap qrCodeImage = qrCode.GetGraphic(5);
+
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    qrCodeImage.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                    return Convert.ToBase64String(stream.ToArray());
+                }
+            }
+        }
+
+        public string CadastrarQrCode(int idLivro)
+        {
+            var livro = Repository.FirstOrDefault(x => x.Id.Equals(idLivro));
+            livro.QrCode = gerarQrCode(idLivro);
+            return livro.QrCode;
         }
 
         public override async Task<LivroDto> UpdateAsync(UpdateLivroDto livroDto)
