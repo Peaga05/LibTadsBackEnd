@@ -17,23 +17,24 @@ using System.Threading.Tasks;
 namespace LibTads.Livros
 {
     [AbpAuthorize(PermissionNames.Pages_Livros)]
-    public class LivroAppService : AsyncCrudAppService<Livro, LivroDto, int, PagedLivroResultRequestDto, CreateLivroDto, UpdateLivroDto>
+    public class LivroAppService : LibTadsAppServiceBase
     {
+        private readonly IRepository<Livro, int> Repository;
         private readonly IRepository<Autor, int> _repositoryAutor;
         private readonly IRepository<Genero, int> _repositoryGenero;
         public LivroAppService(
             IRepository<Livro, int> repository,
             IRepository<Autor, int> repositoryAutor,
             IRepository<Genero, int> repositoryGenero
-        ) : base(repository)
+        )
         {
             _repositoryAutor = repositoryAutor;
             _repositoryGenero = repositoryGenero;
+            Repository = repository;
         }
 
-        public override async Task<LivroDto> CreateAsync(CreateLivroDto livroDto)
+        public async Task<LivroDto> CreateAsync(CreateLivroDto livroDto)
         {
-            CheckCreatePermission();
             var haveLivro = await Repository.FirstOrDefaultAsync(x => x.Isbn.Equals(livroDto.Isbn));
             if (haveLivro != null)
             {
@@ -41,32 +42,34 @@ namespace LibTads.Livros
                 {
                     haveLivro.IsDeleted = false;
                     await Repository.UpdateAsync(haveLivro);
-                    return MapToEntityDto(haveLivro);
+                    return ObjectMapper.Map<LivroDto>(haveLivro);
                 }
                 throw new UserFriendlyException("Esse livro já está cadastrado");
             }
             var livro = ObjectMapper.Map<Livro>(livroDto);
             livro.CreationTime = DateTime.Now;
+            livro.QuantidadeDisponivel = livro.Quantidade;
             await Repository.InsertAsync(livro);
-            return MapToEntityDto(livro);
+            return ObjectMapper.Map<LivroDto>(livro);
         }
 
-        public override async Task<LivroDto> UpdateAsync(UpdateLivroDto livroDto)
+        public async Task<LivroDto> UpdateAsync(UpdateLivroDto livroDto)
         {
-            CheckCreatePermission();
+            var quantidade = 0;
             var haveIsbn = Repository.FirstOrDefault(x => x.Isbn.Equals(livroDto.Isbn) && x.Id != livroDto.Id);
-            if(haveIsbn != null)
+            if (haveIsbn != null)
             {
                 throw new UserFriendlyException("Esse isbn esta vinculado a outro livro!");
             }
+            quantidade = AlterarQuantidadeDisponivel(livroDto, quantidade);
             var livro = ObjectMapper.Map<Livro>(livroDto);
+            livro.QuantidadeDisponivel += quantidade;
             await Repository.UpdateAsync(livro);
-            return await GetAsync(livroDto);
+            return ObjectMapper.Map<LivroDto>(livro);
         }
 
         public async Task DeActivate(int idLivro)
         {
-            CheckUpdatePermission();
             var livro = await Repository.FirstOrDefaultAsync(x => x.Id == idLivro);
             livro.IsDeleted = true;
             await Repository.UpdateAsync(livro);
@@ -98,6 +101,29 @@ namespace LibTads.Livros
         {
             var livro = await Repository.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             return ObjectMapper.Map<LivroDto>(livro);
+        }
+
+        private int AlterarQuantidadeDisponivel(UpdateLivroDto livroDto, int quantidade)
+        {
+            var livroEntity = Repository.FirstOrDefault(x => x.Id.Equals(livroDto.Id));
+            if (livroEntity == null)
+            {
+                throw new UserFriendlyException("Livro não encontrado!");
+            }
+            if (livroDto.Quantidade < livroDto.QuantidadeDisponivel)
+            {
+                throw new UserFriendlyException("A qauntidade de livros não pode ser menor que a quantiodade de livros disponíveis!");
+            }
+            if (livroEntity.Quantidade > livroDto.Quantidade)
+            {
+                quantidade = livroDto.Quantidade - livroEntity.Quantidade;
+            }
+            else if (livroEntity.Quantidade < livroDto.Quantidade)
+            {
+                quantidade = livroEntity.Quantidade - livroDto.Quantidade;
+            }
+
+            return quantidade;
         }
     }
 }

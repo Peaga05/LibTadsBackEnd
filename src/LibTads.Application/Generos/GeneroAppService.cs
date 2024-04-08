@@ -17,15 +17,16 @@ using System.Threading.Tasks;
 namespace LibTads.Generos
 {
     [AbpAuthorize(PermissionNames.Pages_Generos)]
-    public class GeneroAppService : AsyncCrudAppService<Genero, GeneroDto, int, PagedGeneroResultRequestDto, CreateGeneroDto, UpdateGeneroDto>
+    public class GeneroAppService : LibTadsAppServiceBase
     {
-        public GeneroAppService(IRepository<Genero, int> repository) : base(repository)
+        private readonly IRepository<Genero, int> Repository;
+        public GeneroAppService(IRepository<Genero, int> _repository)
         {
+            Repository = _repository;
         }
 
-        public override async Task<GeneroDto> CreateAsync(CreateGeneroDto generoDto)
+        public  async Task<GeneroDto> CreateAsync(CreateGeneroDto generoDto)
         {
-            CheckCreatePermission();
             var havegenero = await Repository.FirstOrDefaultAsync(x => x.Descricao.Equals(generoDto.Descricao));
             if (havegenero != null)
             {
@@ -33,27 +34,25 @@ namespace LibTads.Generos
                 {
                     havegenero.IsDeleted = false;
                     await Repository.UpdateAsync(havegenero);
-                    return MapToEntityDto(havegenero);
+                    return ObjectMapper.Map<GeneroDto>(havegenero);
                 }
                 throw new UserFriendlyException("Esse gênero já está cadastrado");
             }
             var genero = ObjectMapper.Map<Genero>(generoDto);
             genero.CreationTime = DateTime.Now;
             await Repository.InsertAsync(genero);
-            return MapToEntityDto(genero);
+            return ObjectMapper.Map<GeneroDto>(genero);
         }
 
-        public override async Task<GeneroDto> UpdateAsync(UpdateGeneroDto generoDto)
+        public async Task<GeneroDto> UpdateAsync(UpdateGeneroDto generoDto)
         {
-            CheckCreatePermission();
             var genero = ObjectMapper.Map<Genero>(generoDto);
             await Repository.UpdateAsync(genero);
-            return await GetAsync(generoDto);
+            return ObjectMapper.Map<GeneroDto>(genero);
         }
 
         public async Task DeActivate(int idGenero)
         {
-            CheckUpdatePermission();
             var genero = await Repository.FirstOrDefaultAsync(x => x.Id == idGenero);
             genero.IsDeleted = true;
             await Repository.UpdateAsync(genero);
