@@ -18,21 +18,19 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace LibTads.Emprestimos
 {
-    public class EmprestimoAppService : LibTadsAppServiceBase
+    public class EmprestimoAppService : AsyncCrudAppService<Emprestimo, EmprestimoDto, int, PagedEmprestimoResultRequestDto, CreateEmprestimoDto, UpdateEmprestimoDto>
     {
-        private readonly IRepository<Emprestimo, int> Repository;
-        private readonly IRepository<Livro, int> _livroRepository;
         private readonly IAbpSession _abpSession;
-
-        public EmprestimoAppService(IAbpSession abpSession, IRepository<Livro, int> livroRepository, IRepository<Emprestimo, int> _repository)
+        private readonly IRepository<Livro, int> _livroRepository;
+        public EmprestimoAppService(IRepository<Emprestimo, int> repository, IAbpSession abpSession, IRepository<Livro, int> livroRepository) : base(repository)
         {
-            Repository = _repository;
-            _livroRepository = livroRepository;
             _abpSession = abpSession;
+            _livroRepository = livroRepository;
         }
 
-        public async Task<EmprestimoDto> CreateAsync(CreateEmprestimoDto emprestimoDto)
+        public override async Task<EmprestimoDto> CreateAsync(CreateEmprestimoDto emprestimoDto)
         {
+            CheckCreatePermission();
             if (_abpSession.UserId == null)
             {
                 throw new UserFriendlyException("Erro: Faça o login novamente!");
@@ -45,14 +43,14 @@ namespace LibTads.Emprestimos
             }
 
             var livro = await _livroRepository.FirstOrDefaultAsync(x => x.Id.Equals(emprestimoDto.LivroId));
-            livro.QuantidadeDisponivel -= 1;
+            livro.Quantidade -= 1;
             await _livroRepository.UpdateAsync(livro);
 
             var emprestimo = ObjectMapper.Map<Emprestimo>(emprestimoDto);
             emprestimo.DataEmprestimo = DateTime.Now;
             emprestimo.CreationTime = DateTime.Now;
             await Repository.InsertAsync(emprestimo);
-            return ObjectMapper.Map<EmprestimoDto>(emprestimo);
+            return MapToEntityDto(emprestimo);
         }
 
         public async Task<PagedResultDto<EmprestimoDto>> GetAllEmprestimos(PagedEmprestimoResultRequestDto input, int pageNumber, int pageSize)
@@ -123,7 +121,7 @@ namespace LibTads.Emprestimos
                 throw new UserFriendlyException("Livro não encontrado!");
             }
 
-            livro.QuantidadeDisponivel += 1;
+            livro.Quantidade += 1;
             _livroRepository.UpdateAsync(livro);
 
             emprestimo.DataDevolucao = DateTime.Now;

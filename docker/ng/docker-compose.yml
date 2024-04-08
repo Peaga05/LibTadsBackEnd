@@ -5,39 +5,13 @@ services:
     abp_host:
         image: abp/host
         environment:
-            ASPNETCORE_ENVIRONMENT: Staging
-            ConnectionStrings__Default: "Server=sql_server,1433;Database=LibTadsDb;User=sa;Password=Mudar123!;"
-            App__ServerRootAddress: "https://localhost:44311/"
-            App__ClientRootAddress: "http://172.21.0.1:9902"
-            App__CorsOrigins: "http://localhost:21021,http://localhost:9902,http://172.21.0.1:9902"
+            - ASPNETCORE_ENVIRONMENT=Staging
         ports:
-            - "44311:44311"
-        networks:
-            - rede
+            - "9901:80"
         volumes:
             - "./Host-Logs:/app/App_Data/Logs"
-        depends_on:
-            - sql_server
 
     abp_ng:
         image: abp/ng
         ports:
             - "9902:80"
-        networks:
-            - rede
-    
-    sql_server:
-        image: mcr.microsoft.com/mssql/server
-        environment:
-            SA_PASSWORD: "Mudar123!"
-            ACCEPT_EULA: "Y"
-            MSSQL_PID: "Express"
-        ports:
-            - "1433:1433"
-        networks:
-            - rede
-
-networks:
-    rede:
-        name: LibTadsRede
-        external: true

@@ -139,14 +139,14 @@ namespace LibTads.Users
         }
 
         [AbpAllowAnonymous]
-        public async Task<UserDto> GetUserLogado()
+        public async Task<long> GetUserLogado()
         {
             if (_abpSession.UserId == null)
             {
                 throw new UserFriendlyException("Erro: Faça o login novamente!");
             }
             var user = await _userManager.GetUserByIdAsync(_abpSession.GetUserId());
-            return ObjectMapper.Map<UserDto>(user);
+            return user.Id;
 
         }
 

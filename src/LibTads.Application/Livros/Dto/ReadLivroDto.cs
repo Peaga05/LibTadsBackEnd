@@ -18,7 +18,6 @@ namespace LibTads.Livros.Dto
         public string Isbn { get; set; }
         [Required(ErrorMessage = "O campo quantidade é obrigatório.")]
         public int Quantidade { get; set; }
-        public int QuantidadeDisponivel { get; set; }
         public string QrCode { get; set; }
         public DateTime CreationTime { get; set; }
         public bool IsDeleted { get; set; }

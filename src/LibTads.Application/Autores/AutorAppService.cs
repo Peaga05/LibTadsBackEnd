@@ -20,16 +20,15 @@ using System.Threading.Tasks;
 namespace LibTads.Autores
 {
     [AbpAuthorize(PermissionNames.Pages_Autores)]
-    public class AutorAppService : LibTadsAppServiceBase
+    public class AutorAppService : AsyncCrudAppService<Autor, AutorDto, int, PagedAutorResultRequestDto, CreateAutorDto, UpdateAutorDto>
     {
-        private readonly IRepository<Autor, int> Repository;
-        public AutorAppService(IRepository<Autor, int> _repository)
+        public AutorAppService(IRepository<Autor, int> repository) : base(repository)
         {
-            Repository = _repository;  
         }
 
-        public async Task<AutorDto> CreateAsync(CreateAutorDto autorDto)
+        public override async Task<AutorDto> CreateAsync(CreateAutorDto autorDto)
         {
+            CheckCreatePermission();
             var haveAutor = await Repository.FirstOrDefaultAsync(x => x.Nome.Equals(autorDto.Nome));
             if (haveAutor != null)
             {
@@ -37,25 +36,27 @@ namespace LibTads.Autores
                 {
                     haveAutor.IsDeleted = false;
                     await Repository.UpdateAsync(haveAutor);
-                    return ObjectMapper.Map<AutorDto>(haveAutor);
+                    return MapToEntityDto(haveAutor);
                 }
                 throw new UserFriendlyException("Esse autor já está cadastrado");
             }
             var autor = ObjectMapper.Map<Autor>(autorDto);
             autor.CreationTime = DateTime.Now;
             await Repository.InsertAsync(autor);
-            return ObjectMapper.Map<AutorDto>(autor);
+            return MapToEntityDto(autor);
         }
 
-        public  async Task<AutorDto> UpdateAsync(UpdateAutorDto autorDto)
+        public override async Task<AutorDto> UpdateAsync(UpdateAutorDto autorDto)
         {
+            CheckUpdatePermission();
             var autor = ObjectMapper.Map<Autor>(autorDto);
             await Repository.UpdateAsync(autor);
-            return ObjectMapper.Map<AutorDto>(autor);
+            return await GetAsync(autorDto);
         }
 
         public async Task DeActivate(int idAutor)
         {
+            CheckUpdatePermission();
             var autor = await Repository.FirstOrDefaultAsync(x => x.Id == idAutor);
             autor.IsDeleted = true;
             await Repository.UpdateAsync(autor);
