@@ -18,25 +18,26 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace LibTads.Emprestimos
 {
-    public class EmprestimoAppService : AsyncCrudAppService<Emprestimo, EmprestimoDto, int, PagedEmprestimoResultRequestDto, CreateEmprestimoDto, UpdateEmprestimoDto>
+    public class EmprestimoAppService : LibTadsAppServiceBase
     {
+        private readonly IRepository<Emprestimo, int> _repository;
+        private readonly IRepository<Livro, int> _livroRepository; 
         private readonly IAbpSession _abpSession;
-        private readonly IRepository<Livro, int> _livroRepository;
-        public EmprestimoAppService(IRepository<Emprestimo, int> repository, IAbpSession abpSession, IRepository<Livro, int> livroRepository) : base(repository)
+        public EmprestimoAppService(IRepository<Emprestimo, int> repository, IAbpSession abpSession, IRepository<Livro, int> livroRepository)
         {
-            _abpSession = abpSession;
+            _repository = repository;
             _livroRepository = livroRepository;
+            _abpSession = abpSession;
         }
 
-        public override async Task<EmprestimoDto> CreateAsync(CreateEmprestimoDto emprestimoDto)
+        public async Task<EmprestimoDto> CreateAsync(CreateEmprestimoDto emprestimoDto)
         {
-            CheckCreatePermission();
             if (_abpSession.UserId == null)
             {
                 throw new UserFriendlyException("Erro: Faça o login novamente!");
             }
             emprestimoDto.UserId = _abpSession.GetUserId();
-            var haveEmprestuimo = await Repository.FirstOrDefaultAsync(x => x.LivroId.Equals(emprestimoDto.LivroId) && x.UserId.Equals(emprestimoDto.UserId) && x.DataDevolucao == null);
+            var haveEmprestuimo = await _repository.FirstOrDefaultAsync(x => x.LivroId.Equals(emprestimoDto.LivroId) && x.UserId.Equals(emprestimoDto.UserId) && x.DataDevolucao == null);
             if (haveEmprestuimo != null)
             {
                 throw new UserFriendlyException("Emprestimo em andamento!");
@@ -49,15 +50,15 @@ namespace LibTads.Emprestimos
             var emprestimo = ObjectMapper.Map<Emprestimo>(emprestimoDto);
             emprestimo.DataEmprestimo = DateTime.Now;
             emprestimo.CreationTime = DateTime.Now;
-            await Repository.InsertAsync(emprestimo);
-            return MapToEntityDto(emprestimo);
+            await _repository.InsertAsync(emprestimo);
+            return ObjectMapper.Map<EmprestimoDto>(emprestimo);
         }
 
         public async Task<PagedResultDto<EmprestimoDto>> GetAllEmprestimos(PagedEmprestimoResultRequestDto input, int pageNumber, int pageSize)
         {
             if (input.Keyword == null) input.Keyword = "";
 
-            var emprestimos = Repository.GetAll()
+            var emprestimos = _repository.GetAll()
                 .Include(x => x.Usuario)
                 .Include(x => x.Livro)
                 .Where(x => x.Livro.Titulo.Contains(input.Keyword) || x.Usuario.Name.Contains(input.Keyword))
@@ -86,7 +87,7 @@ namespace LibTads.Emprestimos
                 throw new UserFriendlyException("Erro: Faça o login novamente!");
             }
             if (input.Keyword == null) input.Keyword = "";
-            var emprestimos = Repository.GetAll()
+            var emprestimos = _repository.GetAll()
                 .Include(x => x.Usuario)
                 .Include(x => x.Livro)
                 .Where(x => x.UserId.Equals(_abpSession.GetUserId()) && (x.Livro.Titulo.Contains(input.Keyword) || x.Usuario.Name.Contains(input.Keyword)))
@@ -109,7 +110,7 @@ namespace LibTads.Emprestimos
         }
         public void DevolverLivro(int idEmprestimo)
         {
-            var emprestimo = Repository.FirstOrDefault(x => x.Id.Equals(idEmprestimo));
+            var emprestimo = _repository.FirstOrDefault(x => x.Id.Equals(idEmprestimo));
             if (emprestimo == null)
             {
                 throw new UserFriendlyException("Empréstimo não encontrado!");
@@ -125,19 +126,19 @@ namespace LibTads.Emprestimos
             _livroRepository.UpdateAsync(livro);
 
             emprestimo.DataDevolucao = DateTime.Now;
-            Repository.Update(emprestimo);
+            _repository.Update(emprestimo);
         }
 
         public void RenovarEmprestimo(int idEmprestimo)
         {
-            var emprestimo = Repository.FirstOrDefault(x => x.Id.Equals(idEmprestimo));
+            var emprestimo = _repository.FirstOrDefault(x => x.Id.Equals(idEmprestimo));
             if (emprestimo == null)
             {
                 throw new UserFriendlyException("Empréstimo não encontrado!");
             }
 
             emprestimo.DataDevolucao = DateTime.Now;
-            Repository.Update(emprestimo);
+            _repository.Update(emprestimo);
 
             var newEmprestimo = new Emprestimo()
             {
@@ -147,7 +148,7 @@ namespace LibTads.Emprestimos
                 CreationTime = DateTime.Now,
             };
 
-            Repository.Insert(newEmprestimo);
+            _repository.Insert(newEmprestimo);
         }
     }
 }

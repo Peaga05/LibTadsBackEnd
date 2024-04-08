@@ -21,43 +21,44 @@ using QRCoder;
 namespace LibTads.Livros
 {
     [AbpAuthorize(PermissionNames.Pages_Livros)]
-    public class LivroAppService : AsyncCrudAppService<Livro, LivroDto, int, PagedLivroResultRequestDto, CreateLivroDto, UpdateLivroDto>
+    public class LivroAppService : LibTadsAppServiceBase
     {
+        private readonly IRepository<Livro, int> _repository;
         private readonly IRepository<Autor, int> _repositoryAutor;
         private readonly IRepository<Genero, int> _repositoryGenero;
         public LivroAppService(
             IRepository<Livro, int> repository,
             IRepository<Autor, int> repositoryAutor,
             IRepository<Genero, int> repositoryGenero
-        ) : base(repository)
+        )
         {
+            _repository = repository;
             _repositoryAutor = repositoryAutor;
             _repositoryGenero = repositoryGenero;
         }
 
-        public override async Task<LivroDto> CreateAsync(CreateLivroDto livroDto)
+        public async Task<LivroDto> CreateAsync(CreateLivroDto livroDto)
         {
-            CheckCreatePermission();
-            var haveLivro = await Repository.FirstOrDefaultAsync(x => x.Isbn.Equals(livroDto.Isbn));
+            var haveLivro = await _repository.FirstOrDefaultAsync(x => x.Isbn.Equals(livroDto.Isbn));
             if (haveLivro != null)
             {
                 if (haveLivro.IsDeleted)
                 {
                     haveLivro.IsDeleted = false;
-                    await Repository.UpdateAsync(haveLivro);
-                    return MapToEntityDto(haveLivro);
+                    await _repository.UpdateAsync(haveLivro);
+                    return ObjectMapper.Map<LivroDto>(haveLivro);
                 }
                 throw new UserFriendlyException("Esse livro já está cadastrado");
             }
             var livro = ObjectMapper.Map<Livro>(livroDto);
             livro.CreationTime = DateTime.Now;
-            await Repository.InsertAsync(livro);
-            var livroMap =  MapToEntityDto(livro);
+            await _repository.InsertAsync(livro);
+            var livroMap = ObjectMapper.Map<LivroDto>(livro);
             if (livroDto.GerarQrCode)
             {
                 livro.QrCode = gerarQrCode(livroMap.Id);
                 livroMap.QrCode = livro.QrCode;
-                await Repository.UpdateAsync(livro);
+                await _repository.UpdateAsync(livro);
             }
             return livroMap;
         }
@@ -81,36 +82,34 @@ namespace LibTads.Livros
 
         public string CadastrarQrCode(int idLivro)
         {
-            var livro = Repository.FirstOrDefault(x => x.Id.Equals(idLivro));
+            var livro = _repository.FirstOrDefault(x => x.Id.Equals(idLivro));
             livro.QrCode = gerarQrCode(idLivro);
             return livro.QrCode;
         }
 
-        public override async Task<LivroDto> UpdateAsync(UpdateLivroDto livroDto)
+        public async Task<LivroDto> UpdateAsync(UpdateLivroDto livroDto)
         {
-            CheckCreatePermission();
-            var haveIsbn = Repository.FirstOrDefault(x => x.Isbn.Equals(livroDto.Isbn) && x.Id != livroDto.Id);
+            var haveIsbn = _repository.FirstOrDefault(x => x.Isbn.Equals(livroDto.Isbn) && x.Id != livroDto.Id);
             if(haveIsbn != null)
             {
                 throw new UserFriendlyException("Esse isbn esta vinculado a outro livro!");
             }
             var livro = ObjectMapper.Map<Livro>(livroDto);
-            await Repository.UpdateAsync(livro);
-            return await GetAsync(livroDto);
+            await _repository.UpdateAsync(livro);
+            return ObjectMapper.Map<LivroDto>(livro);
         }
 
         public async Task DeActivate(int idLivro)
         {
-            CheckUpdatePermission();
-            var livro = await Repository.FirstOrDefaultAsync(x => x.Id == idLivro);
+            var livro = await _repository.FirstOrDefaultAsync(x => x.Id == idLivro);
             livro.IsDeleted = true;
-            await Repository.UpdateAsync(livro);
+            await _repository.UpdateAsync(livro);
         }
 
         public async Task<PagedResultDto<LivroDto>> GetLivros(PagedLivroResultRequestDto input, int pageNumber, int pageSize)
         {
             if (input.Keyword == null) input.Keyword = "";
-            var query = Repository.GetAllListAsync(e => e.IsDeleted == false && (e.Titulo.Contains(input.Keyword) || e.Autor.Nome.Contains(input.Keyword) || e.Genero.Descricao.Contains(input.Keyword)));
+            var query = _repository.GetAllListAsync(e => e.IsDeleted == false && (e.Titulo.Contains(input.Keyword) || e.Autor.Nome.Contains(input.Keyword) || e.Genero.Descricao.Contains(input.Keyword)));
 
             var totalCount = query.Result.Count;
             var items = query.Result.Skip((pageNumber - 1) * pageSize)
@@ -131,7 +130,7 @@ namespace LibTads.Livros
 
         public async Task<LivroDto> GetLivroById(int id)
         {
-            var livro = await Repository.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+            var livro = await _repository.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             return ObjectMapper.Map<LivroDto>(livro);
         }
     }
