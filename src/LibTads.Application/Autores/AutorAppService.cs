@@ -20,52 +20,51 @@ using System.Threading.Tasks;
 namespace LibTads.Autores
 {
     [AbpAuthorize(PermissionNames.Pages_Autores)]
-    public class AutorAppService : AsyncCrudAppService<Autor, AutorDto, int, PagedAutorResultRequestDto, CreateAutorDto, UpdateAutorDto>
+    public class AutorAppService : LibTadsAppServiceBase
     {
-        public AutorAppService(IRepository<Autor, int> repository) : base(repository)
+        private readonly IRepository<Autor, int> _repository;
+        public AutorAppService(IRepository<Autor, int> repository)
         {
+            _repository = repository;
         }
 
-        public override async Task<AutorDto> CreateAsync(CreateAutorDto autorDto)
+        public async Task<AutorDto> CreateAsync(CreateAutorDto autorDto)
         {
-            CheckCreatePermission();
-            var haveAutor = await Repository.FirstOrDefaultAsync(x => x.Nome.Equals(autorDto.Nome));
+            var haveAutor = await _repository.FirstOrDefaultAsync(x => x.Nome.Equals(autorDto.Nome));
             if (haveAutor != null)
             {
                 if (haveAutor.IsDeleted)
                 {
                     haveAutor.IsDeleted = false;
-                    await Repository.UpdateAsync(haveAutor);
-                    return MapToEntityDto(haveAutor);
+                    await _repository.UpdateAsync(haveAutor);
+                    return ObjectMapper.Map<AutorDto>(haveAutor);
                 }
                 throw new UserFriendlyException("Esse autor já está cadastrado");
             }
             var autor = ObjectMapper.Map<Autor>(autorDto);
             autor.CreationTime = DateTime.Now;
-            await Repository.InsertAsync(autor);
-            return MapToEntityDto(autor);
+            await _repository.InsertAsync(autor);
+            return ObjectMapper.Map<AutorDto>(autor);
         }
 
-        public override async Task<AutorDto> UpdateAsync(UpdateAutorDto autorDto)
+        public async Task<AutorDto> UpdateAsync(UpdateAutorDto autorDto)
         {
-            CheckUpdatePermission();
             var autor = ObjectMapper.Map<Autor>(autorDto);
-            await Repository.UpdateAsync(autor);
-            return await GetAsync(autorDto);
+            await _repository.UpdateAsync(autor);
+            return ObjectMapper.Map<AutorDto>(autor);
         }
 
         public async Task DeActivate(int idAutor)
         {
-            CheckUpdatePermission();
-            var autor = await Repository.FirstOrDefaultAsync(x => x.Id == idAutor);
+            var autor = await _repository.FirstOrDefaultAsync(x => x.Id == idAutor);
             autor.IsDeleted = true;
-            await Repository.UpdateAsync(autor);
+            await _repository.UpdateAsync(autor);
         }
 
         public async Task<PagedResultDto<AutorDto>> GetAutores(PagedAutorResultRequestDto input, int pageNumber, int pageSize)
         {
             if (input.Keyword == null) input.Keyword = "";
-            var query = Repository.GetAllListAsync(e => e.IsDeleted == false && e.Nome.Contains(input.Keyword));
+            var query = _repository.GetAllListAsync(e => e.IsDeleted == false && e.Nome.Contains(input.Keyword));
 
             var totalCount = query.Result.Count;
             var items = query.Result.Skip((pageNumber - 1) * pageSize)
@@ -78,19 +77,19 @@ namespace LibTads.Autores
 
         public async Task<AutorDto> GetAutorById(int id)
         {
-            var autor = await Repository.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+            var autor = await _repository.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             return ObjectMapper.Map<AutorDto>(autor);
         }
 
         public IQueryable<Autor> CreateFilteredQuery(PagedRoleResultRequestDto input)
         {
-            return Repository.GetAllIncluding()
+            return _repository.GetAllIncluding()
                 .WhereIf(!input.Keyword.IsNullOrWhiteSpace(), x => x.Nome.Contains(input.Keyword));
         }
 
         public async Task<List<AutorDto>> GetAllAutor()
         {
-            var query = Repository.GetAllListAsync(e => e.IsDeleted == false);
+            var query = _repository.GetAllListAsync(e => e.IsDeleted == false);
             var itemDtos = ObjectMapper.Map<List<AutorDto>>(query.Result);
             return itemDtos;
 

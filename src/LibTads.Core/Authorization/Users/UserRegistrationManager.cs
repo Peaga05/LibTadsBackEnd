@@ -58,7 +58,7 @@ namespace LibTads.Authorization.Users
 
             user.SetNormalizedNames();
 
-            foreach (var defaultRole in await _roleManager.Roles.Where(r => r.DisplayName.Equals("Aluno")).ToListAsync())
+            foreach (var defaultRole in await _roleManager.Roles.Where(r => r.Name.Equals("Aluno")).ToListAsync())
             {
                 user.Roles.Add(new UserRole(null, user.Id, defaultRole.Id));
             }
