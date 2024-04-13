@@ -43,10 +43,6 @@ namespace LibTads.Emprestimos
                 throw new UserFriendlyException("Emprestimo em andamento!");
             }
 
-            var livro = await _livroRepository.FirstOrDefaultAsync(x => x.Id.Equals(emprestimoDto.LivroId));
-            livro.Quantidade -= 1;
-            await _livroRepository.UpdateAsync(livro);
-
             var emprestimo = ObjectMapper.Map<Emprestimo>(emprestimoDto);
             emprestimo.DataEmprestimo = DateTime.Now;
             emprestimo.CreationTime = DateTime.Now;
@@ -122,7 +118,6 @@ namespace LibTads.Emprestimos
                 throw new UserFriendlyException("Livro não encontrado!");
             }
 
-            livro.Quantidade += 1;
             _livroRepository.UpdateAsync(livro);
 
             emprestimo.DataDevolucao = DateTime.Now;
