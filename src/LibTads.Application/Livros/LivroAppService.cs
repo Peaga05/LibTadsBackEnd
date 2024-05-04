@@ -44,7 +44,7 @@ namespace LibTads.Livros
         {
             if (livroDto.Isbn != null)
             {
-                var haveLivro = await _repository.FirstOrDefaultAsync(x => x.Isbn.Equals(livroDto.Isbn));
+                var haveLivro = await _repository.FirstOrDefaultAsync(x => x.Isbn.Equals(livroDto.Isbn) || x.Titulo.Trim().Equals(livroDto.Titulo.Trim()));
                 if (haveLivro != null)
                 {
                     if (haveLivro.IsDeleted)

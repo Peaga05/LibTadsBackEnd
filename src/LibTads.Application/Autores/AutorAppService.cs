@@ -30,7 +30,7 @@ namespace LibTads.Autores
 
         public async Task<AutorDto> CreateAsync(CreateAutorDto autorDto)
         {
-            var haveAutor = await _repository.FirstOrDefaultAsync(x => x.Nome.Equals(autorDto.Nome));
+            var haveAutor = await _repository.FirstOrDefaultAsync(x => x.Nome.Trim().Equals(autorDto.Nome.Trim()));
             if (haveAutor != null)
             {
                 if (haveAutor.IsDeleted)

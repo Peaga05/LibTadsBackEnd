@@ -27,7 +27,7 @@ namespace LibTads.Generos
 
         public async Task<GeneroDto> CreateAsync(CreateGeneroDto generoDto)
         {
-            var havegenero = await _repository.FirstOrDefaultAsync(x => x.Descricao.Equals(generoDto.Descricao));
+            var havegenero = await _repository.FirstOrDefaultAsync(x => x.Descricao.Trim().Equals(generoDto.Descricao.Trim()));
             if (havegenero != null)
             {
                 if (havegenero.IsDeleted)
