@@ -17,6 +17,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using QRCoder;
+using Abp.Extensions;
 
 namespace LibTads.Livros
 {
@@ -42,19 +43,30 @@ namespace LibTads.Livros
 
         public async Task<LivroDto> CreateAsync(CreateLivroDto livroDto)
         {
-            if (livroDto.Isbn != null)
+            Livro haveLivro = null;
+            if (!livroDto.Isbn.IsNullOrEmpty())
             {
-                var haveLivro = await _repository.FirstOrDefaultAsync(x => x.Isbn.Equals(livroDto.Isbn) || x.Titulo.Trim().Equals(livroDto.Titulo.Trim()));
-                if (haveLivro != null)
+                haveLivro = await _repository.FirstOrDefaultAsync(x => x.Isbn.Equals(livroDto.Isbn) && x.Titulo.Trim().Equals(livroDto.Titulo.Trim()));   
+                var livroIsbn = _repository.FirstOrDefault(x => x.Isbn == livroDto.Isbn);
+                if (livroIsbn != null)
                 {
-                    if (haveLivro.IsDeleted)
-                    {
-                        haveLivro.IsDeleted = false;
-                        await _repository.UpdateAsync(haveLivro);
-                        return ObjectMapper.Map<LivroDto>(haveLivro);
-                    }
-                    throw new UserFriendlyException("Esse livro já está cadastrado");
+                    throw new UserFriendlyException("Esse isbn esta vinculado a outro livro!");
                 }
+            }
+            
+            else 
+                haveLivro = await _repository.FirstOrDefaultAsync(x => x.Titulo.Trim().Equals(livroDto.Titulo.Trim()));
+                
+
+            if (haveLivro != null)
+            {
+                if (haveLivro.IsDeleted)
+                {
+                    haveLivro.IsDeleted = false;
+                    await _repository.UpdateAsync(haveLivro);
+                    return ObjectMapper.Map<LivroDto>(haveLivro);
+                }
+                throw new UserFriendlyException("Esse livro já está cadastrado");
             }
 
             var livro = ObjectMapper.Map<Livro>(livroDto);
@@ -96,7 +108,7 @@ namespace LibTads.Livros
 
         public async Task<LivroDto> UpdateAsync(UpdateLivroDto livroDto)
         {
-            if (livroDto.Isbn != null)
+            if (!livroDto.Isbn.IsNullOrEmpty())
             {
                 var haveIsbn = _repository.FirstOrDefault(x => x.Isbn.Equals(livroDto.Isbn) && x.Id != livroDto.Id);
                 if (haveIsbn != null)
