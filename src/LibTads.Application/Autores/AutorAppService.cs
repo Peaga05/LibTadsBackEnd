@@ -43,6 +43,7 @@ namespace LibTads.Autores
             }
             var autor = ObjectMapper.Map<Autor>(autorDto);
             autor.CreationTime = DateTime.Now;
+            autor.Nome = autorDto.Nome.Trim();
             await _repository.InsertAsync(autor);
             return ObjectMapper.Map<AutorDto>(autor);
         }
@@ -50,6 +51,7 @@ namespace LibTads.Autores
         public async Task<AutorDto> UpdateAsync(UpdateAutorDto autorDto)
         {
             var autor = ObjectMapper.Map<Autor>(autorDto);
+            autor.Nome = autor.Nome.Trim();
             await _repository.UpdateAsync(autor);
             return ObjectMapper.Map<AutorDto>(autor);
         }

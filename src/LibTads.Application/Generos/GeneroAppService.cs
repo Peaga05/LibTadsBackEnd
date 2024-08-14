@@ -40,6 +40,7 @@ namespace LibTads.Generos
             }
             var genero = ObjectMapper.Map<Genero>(generoDto);
             genero.CreationTime = DateTime.Now;
+            genero.Descricao = genero.Descricao.Trim();
             await _repository.InsertAsync(genero);
             return ObjectMapper.Map<GeneroDto>(genero);
         }
@@ -47,6 +48,7 @@ namespace LibTads.Generos
         public async Task<GeneroDto> UpdateAsync(UpdateGeneroDto generoDto)
         {
             var genero = ObjectMapper.Map<Genero>(generoDto);
+            genero.Descricao = genero.Descricao.Trim();
             await _repository.UpdateAsync(genero);
             return ObjectMapper.Map<GeneroDto>(genero);
         }

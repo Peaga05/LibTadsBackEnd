@@ -32,15 +32,17 @@ namespace LibTads.Emprestimos
 
         public async Task<EmprestimoDto> CreateAsync(CreateEmprestimoDto emprestimoDto)
         {
-            if (_abpSession.UserId == null)
-            {
-                throw new UserFriendlyException("Erro: Faça o login novamente!");
-            }
+            if (_abpSession.UserId == null) throw new UserFriendlyException("Erro: Faça o login novamente!");
+            
             emprestimoDto.UserId = _abpSession.GetUserId();
             var haveEmprestuimo = await _repository.FirstOrDefaultAsync(x => x.LivroId.Equals(emprestimoDto.LivroId) && x.UserId.Equals(emprestimoDto.UserId) && x.DataDevolucao == null);
-            if (haveEmprestuimo != null)
+            if (haveEmprestuimo != null) throw new UserFriendlyException("Emprestimo em andamento!");
+
+            var quantidadeEmprestimo = _repository.GetAll().Where(x => x.LivroId.Equals(x.LivroId) && x.DataDevolucao == null).Count();
+            if(quantidadeEmprestimo > 0)
             {
-                throw new UserFriendlyException("Emprestimo em andamento!");
+                var livro = _livroRepository.FirstOrDefault(x => x.Id.Equals(emprestimoDto.LivroId));
+                if (livro != null && livro.Quantidade <= quantidadeEmprestimo) throw new UserFriendlyException("Livro indisponivel");
             }
 
             var emprestimo = ObjectMapper.Map<Emprestimo>(emprestimoDto);
